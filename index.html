@@ -1,1 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaos Keyboard Battle</title>
+  <!-- Google Fonts for modern typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Preconnect hints for external audio resources -->
+  <link rel="preconnect" href="https://www.soundhelix.com">
+  <link rel="preconnect" href="https://actions.google.com">
+  <style>
+    :root {
+      --bg-gradient-start: #1f1c2c;
+      --bg-gradient-end: #928dab;
+      --overlay-bg: rgba(0, 0, 0, 0.85);
+      --font-color: #fff;
+      --primary: #007bff;
+      --input-bg: rgba(255, 255, 255, 0.1);
+      --input-focus-border: #007bff;
+      --transition-speed: 0.3s;
+      --damage-color: rgba(255, 0, 0, 0.7);
+    }
 
+    @keyframes bgAnimation {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes flashEffect {
+      0%   { background-color: var(--damage-color); }
+      100% { background-color: transparent; }
+    }
+    @keyframes pulseEffect {
+      0%   { transform: scale(1); opacity: 1; }
+      50%  { transform: scale(1.05); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes waveEffect {
+      0%   { transform: scale(0); opacity: 0.7; }
+      100% { transform: scale(5); opacity: 0; }
+    }
+    @keyframes shakeEffect {
+      0%   { transform: translate(0,0); }
+      20%  { transform: translate(-5px,0); }
+      40%  { transform: translate(5px,0); }
+      60%  { transform: translate(-5px,0); }
+      80%  { transform: translate(5px,0); }
+      100% { transform: translate(0,0); }
+    }
+    @keyframes buttonPulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes rainbow {
+      0%   { border-image-source: linear-gradient(45deg, #ff0040,#ff8c00,#ffee00,#00ff00,#00ffff,#0000ff,#8b00ff); }
+      50%  { border-image-source: linear-gradient(45deg, #8b00ff,#0000ff,#00ffff,#00ff00,#ffee00,#ff8c00,#ff0040); }
+      100% { border-image-source: linear-gradient(45deg, #ff0040,#ff8c00,#ffee00,#00ff00,#00ffff,#0000ff,#8b00ff); }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(101deg, #1929e7, #97102f);
+      background-size: 200% 200%;
+      animation: bgAnimation 15s ease infinite;
+      color: var(--font-color);
+      overflow: auto;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: background-color var(--transition-speed);
+      position: relative;
+    }
+
+    h1, h2, p { margin: 10px 0; }
+
+    /* Overlays */
+    .overlay {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--overlay-bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s;
+      z-index: 100;
+    }
+    .overlay.hidden { opacity: 0; visibility: hidden; }
+
+    /* Rainbow title */
+    .rainbow-title {
+      font-size: 3rem; font-weight: 700;
+      padding: 10px 20px;
+      border: 4px solid;
+      border-image: linear-gradient(45deg, #ff0040,#ff8c00,#ffee00,#00ff00,#00ffff,#0000ff,#8b00ff) 1;
+      animation: rainbow 3s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    /* Mode & buttons */
+    .mode-buttons, .button-container {
+      display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin: 15px 0;
+    }
+    .mode-button, .button-container button {
+      position: relative; overflow: hidden;
+      padding: 16px 30px; font-size: 1.5rem;
+      border: none; border-radius: 12px; cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      color: #fff; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+      transition: transform var(--transition-speed), box-shadow var(--transition-speed), background var(--transition-speed);
+      background: linear-gradient(45deg, #007bff, #0056b3);
+    }
+    .mode-button:hover, .button-container button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+      background: linear-gradient(45deg, #0056b3, #007bff);
+    }
+    .mode-button.selected {
+      border: 3px solid gold;
+      box-shadow: 0 0 10px 4px gold;
+    }
+    .duo-button { background: linear-gradient(45deg, #007bff, #0056b3); }
+    .survival-button { background: linear-gradient(45deg, #ff0000, #8b0000); }
+    .feedback-button {
+      background: linear-gradient(45deg, #ffeb3b, #fbc02d);
+      color: #000; font-weight: bold; text-transform: uppercase;
+    }
+    .animate-button { animation: buttonPulse 1s infinite; }
+
+    /* Name inputs */
+    .name-container input {
+      padding: 12px 18px; font-size: 1.5rem;
+      border: 2px solid transparent; border-bottom: 2px solid var(--input-focus-border);
+      border-radius: 8px; background: var(--input-bg); color: var(--font-color);
+      outline: none; transition: border var(--transition-speed), background 0.3s ease;
+      margin: 5px;
+    }
+    .name-container input:focus {
+      border-color: var(--input-focus-border);
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Color selection */
+    #colorSelection { display: none; margin: 20px 0; }
+    .color-option {
+      width: 40px; height: 40px; display: inline-block;
+      margin: 5px; border: 2px solid #fff; border-radius: 8px;
+      cursor: pointer; transition: all var(--transition-speed);
+    }
+    .color-option.selected {
+      border-color: #000; box-shadow: 0 0 8px 3px #000;
+    }
+
+    /* Survival-mode controls centering */
+    body.survival-mode #playerControls { justify-content: center; }
+    body.survival-mode #playerControls .control-box:nth-child(2) { display: none; }
+
+    /* Canvas */
+    canvas {
+      background: #222; border: 3px solid #fff; border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4); margin: 20px auto; display: block;
+    }
+
+    /* Volume slider */
+    #volumeSlider {
+      -webkit-appearance: none; width: 300px; height: 8px;
+      border-radius: 5px; background: #555; outline: none;
+      transition: background var(--transition-speed);
+    }
+    #volumeSlider::-webkit-slider-thumb,
+    #volumeSlider::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--primary); cursor: pointer;
+      transition: background var(--transition-speed);
+    }
+    #volumeContainer { margin: 15px auto; }
+
+    /* Player controls */
+    #playerControls {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      width: 100%; max-width: 1600px; margin: -20px auto 20px auto;
+    }
+    .control-box {
+      background: var(--input-bg); border: 2px solid var(--input-focus-border);
+      border-radius: 10px; padding: 20px; color: var(--font-color);
+      font-size: 1.2rem; width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+    .control-box h3 { margin-bottom: 10px; font-size: 1.5rem; }
+    .control-box p { margin: 5px 0; }
+
+    /* Control buttons */
+    #controlsContainer {
+      display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin: 15px auto;
+    }
+    #controlsContainer button {
+      padding: 16px 30px; font-size: 1.5rem; border: none; border-radius: 12px;
+      cursor: pointer; transition: transform var(--transition-speed), box-shadow var(--transition-speed), background var(--transition-speed);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      background: linear-gradient(45deg, #007bff, #0056b3); color: #fff; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    #controlsContainer button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+      background: linear-gradient(45deg, #0056b3, #007bff);
+    }
+
+    @media (max-width: 768px) {
+      .rainbow-title { font-size: 2rem; }
+      canvas { width: 90%; height: auto; }
+      #volumeSlider { width: 80%; }
+      #playerControls { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen Overlay -->
+  <div id="startScreen" class="overlay" role="dialog" aria-labelledby="gameTitle">
+    <div class="rainbow-title" id="gameTitle">Chaos Keyboard Battle</div>
+
+    <!-- Mode Selection -->
+    <div class="mode-buttons">
+      <button id="duoButton" class="mode-button duo-button animate-button" onclick="selectDuoMode()">Duo Mode</button>
+      <button id="survivalButton" class="mode-button survival-button animate-button" onclick="selectSurvivalMode()">Survival Mode</button>
+    </div>
+
+    <!-- Name Inputs -->
+    <div class="name-container" id="nameContainer">
+      <input type="text" id="p1Name" placeholder="Enter 🟦 Player 1 Name" aria-label="Player 1 Name">
+      <input type="text" id="p2Name" placeholder="Enter 🟥 Player 2 Name" aria-label="Player 2 Name">
+    </div>
+
+    <!-- Color Selection -->
+    <div id="colorSelection">
+      <div id="player1ColorBox">
+        <h3>Player 1 Color:</h3>
+        <div class="color-option" data-color="blue" style="background:blue;"></div>
+        <div class="color-option" data-color="red" style="background:red;"></div>
+        <div class="color-option" data-color="green" style="background:green;"></div>
+      </div>
+      <div id="player2ColorBox">
+        <h3>Player 2 Color:</h3>
+        <div class="color-option" data-color="blue" style="background:blue;"></div>
+        <div class="color-option" data-color="red" style="background:red;"></div>
+        <div class="color-option" data-color="green" style="background:green;"></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-container">
+      <button id="startButton" onclick="startGame()">Start Game</button>
+      <button id="fullScreenButton" onclick="toggleFullScreen()">⛶</button>
+      <button class="feedback-button" onclick="openFeedback()">Feedback</button>
+    </div>
+  </div>
+
+  <!-- Instruction Overlay -->
+  <div id="instructionScreen" class="overlay hidden" role="dialog" aria-labelledby="instructionTitle">
+    <h1 id="instructionTitle">
+      Fight: <span id="p1Instruction">🟦Player 1</span> vs <span id="p2Instruction">🟥Player 2</span>
+    </h1>
+  </div>
+
+  <!-- Pause Overlay -->
+  <div id="pauseScreen" class="overlay hidden" role="dialog" aria-labelledby="pauseTitle">
+    <h1 id="pauseTitle">Game Paused</h1>
+    <div class="button-container">
+      <button onclick="togglePause()">Resume</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="gameOverScreen" class="overlay hidden" role="dialog" aria-labelledby="gameOverTitle">
+    <h1 id="gameOverTitle"><span id="winnerName">Player Name</span> 🏆!</h1>
+    <div class="button-container">
+      <button onclick="playAgain()">Play Again!</button>
+      <button class="feedback-button" onclick="openFeedback()">Feedback</button>
+    </div>
+  </div>
+
+  <!-- Game Canvas -->
+  <canvas id="gameCanvas" width="1600" height="900"></canvas>
+
+  <!-- Player Controls -->
+  <div id="playerControls">
+    <div class="control-box">
+      <h3>🟦Player 1 🎮</h3>
+      <p>W, A, S, D – Move</p>
+      <p>SPACE – Shoot</p>
+      <p>Q – Shield</p>
+      <p>E – Dash</p>
+    </div>
+    <div class="control-box">
+      <h3>🟥Player 2 🎮</h3>
+      <p>Arrow Keys – Move</p>
+      <p>ENTER – Shoot</p>
+      <p>M – Shield</p>
+      <p>O – Dash</p>
+    </div>
+  </div>
+
+  <!-- Control Buttons -->
+  <div id="controlsContainer">
+    <button onclick="toggleFullScreen()">Full Screen</button>
+    <button onclick="togglePause()">Pause</button>
+    <button onclick="restartGame()">Restart</button>
+    <button onclick="playAgain()">Play Again!</button>
+  </div>
+
+  <!-- Volume Slider -->
+  <div id="volumeContainer">
+    <label for="volumeSlider">Volume:</label>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop preload="auto"></audio>
+  <audio id="shootSound" src="https://actions.google.com/sounds/v1/impulse/camera_shutter_click.ogg" preload="auto"></audio>
+  <audio id="hitSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="shieldBreakSound" src="https://actions.google.com/sounds/v1/impulse/metal_hit.ogg" preload="auto"></audio>
+
+  <!-- Prevent default space scrolling -->
+  <script>
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' && e.target === document.body) e.preventDefault();
+    });
+  </script>
+
+  <!-- Damage Effect Functions -->
+  <script>
+    function triggerDamageEffect(player) {
+      const body = document.body;
+      body.classList.remove('flash-effect','shake-effect','pulse-effect');
+      body.style.setProperty('--damage-color',
+        player === 1 ? 'rgba(0,0,255,0.7)' : 'rgba(255,0,0,0.7)'
+      );
+      body.classList.add('flash-effect','shake-effect','pulse-effect');
+      const wave = document.createElement('div');
+      wave.classList.add('wave-effect');
+      const rect = document.getElementById('gameCanvas').getBoundingClientRect();
+      wave.style.left = `${rect.left + rect.width/2 - 25}px`;
+      wave.style.top  = `${rect.top  + rect.height/2 - 25}px`;
+      document.body.appendChild(wave);
+      setTimeout(()=>wave.remove(),600);
+      setTimeout(()=>body.classList.remove('flash-effect','shake-effect','pulse-effect'),600);
+    }
+  </script>
+
+  <!-- Mode & Color Selection Logic -->
+  <script>
+    let selectedMode = '', p1Color = '', p2Color = '';
+
+    const duoButton        = document.getElementById('duoButton');
+    const survivalButton   = document.getElementById('survivalButton');
+    const colorSelection   = document.getElementById('colorSelection');
+    const player2ColorBox  = document.getElementById('player2ColorBox');
+
+    function selectDuoMode(){
+      selectedMode = 'duo';
+      document.body.classList.remove('survival-mode');
+      duoButton.classList.add('selected');
+      survivalButton.classList.remove('selected');
+      colorSelection.style.display = 'block';
+      player2ColorBox.style.display = 'block';
+    }
+    function selectSurvivalMode(){
+      selectedMode = 'survival';
+      document.body.classList.add('survival-mode');
+      survivalButton.classList.add('selected');
+      duoButton.classList.remove('selected');
+      colorSelection.style.display = 'block';
+      player2ColorBox.style.display = 'none';
+      p2Color = '';
+    }
+
+    document.querySelectorAll('.color-option').forEach(el => {
+      el.addEventListener('click', e => {
+        const c = e.target.dataset.color;
+        const parent = e.target.parentElement.id;
+        if (parent === 'player1ColorBox') {
+          p1Color = c;
+          document.querySelectorAll('#player1ColorBox .color-option').forEach(o => o.classList.remove('selected'));
+          e.target.classList.add('selected');
+        } else {
+          if (c === p1Color) {
+            alert('Player 2 cannot pick the same color!');
+            return;
+          }
+          p2Color = c;
+          document.querySelectorAll('#player2ColorBox .color-option').forEach(o => o.classList.remove('selected'));
+          e.target.classList.add('selected');
+        }
+      });
+    });
+
+    function startGame(){
+      if (!selectedMode) return alert('Please select a mode.');
+      if (!p1Color)       return alert('Please select Player 1 color.');
+      if (selectedMode==='duo' && !p2Color) return alert('Please select Player 2 color.');
+      // Initialize game with selectedMode, p1Color, p2Color...
+    }
+
+    function openFeedback(){
+      window.open(
+        'https://docs.google.com/forms/d/e/1FAIpQLSeAoFZsKul8s3ri1X4Dk6igH8n2kC3_mv_drBF1xBCmjr_9jw/viewform?usp=dialog',
+        '_blank'
+      );
+    }
+  </script>
+</body>
+</html>
